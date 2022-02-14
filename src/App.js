@@ -1,25 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import NotFound from "./notfound";
+import Member from "./pages/Member";
+import Paket from './pages/Paket';
+import User from "./pages/User";
+import Login from "./pages/Login"
+import Header from "./header";
+import Footer from "./footer";
+import Transaksi from "./pages/Transaksi";
+import FormTransaksi from './pages/FormTransaksi';
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import Navbar from "./Navbar";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+export default function App(){
+  return(
+    <BrowserRouter>
+      <Routes>
+        <Route exact path="/" element={App}/>
+        <Route path="login" element={<Login />}/>
+        <Route path="member" element={<Navbar><Member /></Navbar>}/>
+        <Route path="paket" element={<Navbar><Paket /></Navbar>}/>
+        <Route path="user" element={<Navbar><User /></Navbar>}/>
+        <Route path="transaksi" element={<Navbar><Transaksi /></Navbar>}/>
+        <Route path="formtransaksi" element={<Navbar><FormTransaksi /></Navbar>}/>
+        <Route component = {NotFound}/>
+      </Routes>
+      <Footer />
+    </BrowserRouter>
+  )
 }
 
-export default App;
