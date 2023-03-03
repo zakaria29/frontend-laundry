@@ -1,7 +1,8 @@
 import React from "react"
 import { Modal } from "bootstrap";
 import axios from "axios"
-import { baseUrl } from "../config.js";
+import { baseUrl, authorization } from "../config.js";
+import domToPdf from "dom-to-pdf"
 
 class Member extends React.Component {
     constructor() {
@@ -29,13 +30,15 @@ class Member extends React.Component {
             alamat: "",
             telepon: "",
             jenis_kelamin: "",
-            action: "" //menyimpan aksi dai tambah atau ubah data
+            action: "", //menyimpan aksi dai tambah atau ubah data
+            role: "",
+            visible: true,
         }
-        if(!localStorage.getItem("token")){
-            window.location.href ="/login"
+        if (!localStorage.getItem("token")) {
+            window.location.href = "/login"
         }
     }
-    
+
     tambahData() {
         //memunculkan modal
         this.modalMember = new Modal(document.getElementById("modal-member"))
@@ -71,12 +74,12 @@ class Member extends React.Component {
             //temp.push(newMember)
 
             //this.setState({ members: temp })
-            axios.post(endpoint, newMember)
-            .then(response => {
-                window.alert(response.data.message)
-                this.getData()
-            })
-            .catch(error => console.log(error))
+            axios.post(endpoint, newMember, authorization)
+                .then(response => {
+                    window.alert(response.data.message)
+                    this.getData()
+                })
+                .catch(error => console.log(error))
         } else if (this.state.action === "ubah") {
             this.modalMember.hide()
             let endpoint = `${baseUrl}/member/` + this.state.id_member
@@ -87,16 +90,16 @@ class Member extends React.Component {
                 telepon: this.state.telepon,
                 jenis_kelamin: this.state.jenis_kelamin
             }
-            axios.put(endpoint, newMember)
-            .then(response => {
-                window.alert(response.data.message)
-                this.getData()
-            })
-            .catch(error => console.log(error))
+            axios.put(endpoint, newMember, authorization)
+                .then(response => {
+                    window.alert(response.data.message)
+                    this.getData()
+                })
+                .catch(error => console.log(error))
             //mencari posisi indeks dari data member
             //berdasarkan id_member nya pada array "members"
             //let index = this.state.members.findIndex(
-               // member => member.id_member === this.state.id_member
+            // member => member.id_member === this.state.id_member
             //)
             //let temp = this.state.members
             //temp[index].nama = this.state.nama
@@ -128,44 +131,76 @@ class Member extends React.Component {
     }
 
     hapusData(id_member) {
-        if (window.confirm("Apakah anda yakin ingin meghapus data ini?")){
+        if (window.confirm("Apakah anda yakin ingin meghapus data ini?")) {
             let endpoint = `${baseUrl}/member/` + id_member
-            axios.delete(endpoint)
-            .then(response => {
-                window.alert(response.data.message)
-                this.getData()
-            })
-            .catch(error => console.log(error))
-            //let temp = this.state.members
-            //let index = temp.findIndex(
-                //member => member.id_member === id_member
-            //)
-
-        //menghapus data array
-       // temp.splice(index, 1)
-
-        //this.setState({ members: temp })
+            axios.delete(endpoint, authorization)
+                .then(response => {
+                    window.alert(response.data.message)
+                    this.getData()
+                })
+                .catch(error => console.log(error))
         }
     }
 
-    getData(){
+    getData() {
         let endpoint = `${baseUrl}/member`
-        axios.get(endpoint)
-        .then(response => {
-            this.setState({ members: response.data})
-        })
-        .catch(error => console.log(error))
+        axios.get(endpoint, authorization)
+            .then(result => {
+                this.setState({ members: result.data})
+            })
+            .catch(error => {
+                if(error.response.status == 401){
+                    alert(error.response.data.message)
+                }
+            })
     }
     componentDidMount() {
         this.getData()
+        let user = JSON.parse(localStorage.getItem("user"))
+
+        // cara pertama
+        this.setState({
+            role: user.role
+        })
+
+        //cara kedua
+        if (user.role === 'admin' || user.role === 'kasir') {
+            this.setState({
+                visible: true
+            })
+        } else {
+            this.setState({
+                visible: false
+            })
+        }
+    }
+
+    showAddButton() {
+        if (this.state.role === 'admin' || this.state.role === 'kasir') {
+            return (
+                <button type="button" class="btn btn-outline-dark"
+                    onClick={() => this.tambahData()}>
+                    Tambah
+                </button>
+            )
+        }
+    }
+
+    toPdf(){
+        const element = document.getElementById("list")
+        const options = {
+            filename: "test.pdf"
+        }
+        return domToPdf(element, options, () => alert(`PDF generated`))
     }
     render() {
         return (
             <div className="card">
-
-
+                <button onClick={() => this.toPdf()}>
+                    To PDF
+                </button>
                 <div className="card-body">
-                    <ul className="list-group">
+                    <ul className="list-group" id="list">
                         {this.state.members.map(member => (
                             <li className="list-group-item">
                                 <div className="row">
@@ -185,9 +220,9 @@ class Member extends React.Component {
                                         {member.telepon}
                                     </div>
                                     <div className="col-lg-2">
-                                        <button type="button" className="btn btn-outline-info mx-3"
+                                        <button type="button" className={`btn btn-outline-info mx-3 ${this.state.visible ? `` : `d-none`}`}
                                             onClick={() => this.ubahData(member.id_member)}>Edit</button>
-                                        <button type="button" className="btn btn-outline-danger"
+                                        <button type="button" className={`btn btn-outline-danger ${this.state.visible ? `` : `d-none`}`}
                                             onClick={() => this.hapusData(member.id_member)}>Delete</button>
                                     </div>
                                     {/*bagian untuk alamat */}
@@ -201,9 +236,7 @@ class Member extends React.Component {
                     </ul>
                     <br />
                     <div className="col-lg-3">
-                        <button type="button" class="btn btn-outline-dark"
-                            onClick={() => this.tambahData()}>
-                            Tambah</button>
+                        {this.showAddButton()}
                     </div>
                 </div>
                 {/* form modal member */}

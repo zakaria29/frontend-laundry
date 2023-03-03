@@ -12,7 +12,7 @@ class Login extends React.Component{
 
     loginProcess(event){
         event.preventDefault()
-        let endpoint ="http://localhost:8001/api/auth"
+        let endpoint ="http://localhost:8000/api/auth"
         let request = {
             username: this.state.username,
             password: this.state.password
@@ -28,7 +28,7 @@ class Login extends React.Component{
                 window.location.href = "/member"
 
             } else {
-                window.alert("Sorry, your username and password is invalid")
+                window.alert(result.data.pesan)
             }
         })
         .catch(error => console.log(error))

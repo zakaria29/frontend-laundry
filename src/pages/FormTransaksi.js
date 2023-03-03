@@ -1,6 +1,7 @@
 import React from "react"
 import axios from "axios"
 import { Modal } from "bootstrap";
+import { baseUrl, authorization } from "../config";
 
 export default class FormTransaksi extends React.Component {
     constructor() {
@@ -20,14 +21,14 @@ export default class FormTransaksi extends React.Component {
             jenis_paket: "",
             harga: 0
         }
-        if(!localStorage.getItem("token")){
-            window.location.href ="/login"
+        if (!localStorage.getItem("token")) {
+            window.location.href = "/login"
         }
     }
 
     getMember() {
-        let endpoint = "http://localhost:8001/api/member"
-        axios.get(endpoint)
+        let endpoint = `${baseUrl}/member`
+        axios.get(endpoint, authorization)
             .then(response => {
                 this.setState({ members: response.data })
             })
@@ -35,8 +36,8 @@ export default class FormTransaksi extends React.Component {
     }
 
     getPaket() {
-        let endpoint = "http://localhost:8001/api/paket"
-        axios.get(endpoint)
+        let endpoint = `${baseUrl}/paket`
+        axios.get(endpoint, authorization)
             .then(response => {
                 this.setState({ pakets: response.data })
             })
@@ -45,6 +46,19 @@ export default class FormTransaksi extends React.Component {
     componentDidMount() {
         this.getMember()
         this.getPaket()
+
+        let user = JSON.parse(localStorage.getItem("user"))
+        // data di local storage bertipe string atau JSON
+        // saat diambil dari local storage hrs dikembalikan ke bentuk awal
+        // (object atau array) pakai JSON.parse
+
+        if (user.role !== 'admin' && user.role !== 'kasir') {
+            window.alert(
+                `Maaf Anda tidak berhak untuk mengakses halaman ini`
+            )
+
+            window.location.href = "/"
+        }
     }
 
     tambahPaket(e) {
@@ -71,68 +85,68 @@ export default class FormTransaksi extends React.Component {
     }
     addPaket() {
         //menampilkan form untuk memilih paket
-        this.modal = new Modal(document.getElementById('modal_paket')
-        )
+        this.modal = new Modal(document.getElementById('modal_paket'))
         this.modal.show()
-        
+
         //kosongkan formnya
         this.setState({
             id_paket: "",
             qty: 0,
             jenis_paket: "",
             harga: 0
-    })
+        })
     }
-    hapusData(id_paket){
-		if (window.confirm("Apakah anda yakin ingin menghapus data ini ?")) {
+    hapusData(id_paket) {
+        if (window.confirm("Apakah anda yakin ingin menghapus data ini ?")) {
 
             //mencari posisi index dari data yang akan dihapus
             let temp = this.state.detail_transaksi
             let index = temp.findIndex(detail => detail.id_paket === id_paket)
 
             //menghapus data pada array
-            temp.splice(index,1)
+            temp.splice(index, 1)
 
-            this.setState({detail_transaksi:temp})
-           
+            this.setState({ detail_transaksi: temp })
+
         }
-	}
-    simpanTransaksi(){
-        let endpoint = "http://localhost:8001/api/transaksi"
-            //menampung data dari penggguna
-            let user= JSON.parse(localStorage.getItem("user"))
-            let newData = {
-                id_member: this.state.id_member,
-                tgl: this.state.tgl,
-                batas_waktu: this.state.batas_waktu,
-                tgl_bayar: this.state.tgl_bayar,
-                dibayar: this.state.dibayar,
-                id_user: user.id_user,
-                detail_transaksi: this.state.detail_transaksi
+    }
+    simpanTransaksi() {
+        let endpoint = `${baseUrl}/transaksi`
+        //menampung data dari penggguna
+        let user = JSON.parse(localStorage.getItem("user"))
+        let newData = {
+            id_member: this.state.id_member,
+            tgl: this.state.tgl,
+            batas_waktu: this.state.batas_waktu,
+            tgl_bayar: this.state.tgl_bayar,
+            dibayar: this.state.dibayar,
+            id_user: user.id_user,
+            detail_transaksi: this.state.detail_transaksi
 
 
-            }
+        }
 
-            //let temp = this.state.pakets
-            //temp.push(newPaket)
+        //let temp = this.state.pakets
+        //temp.push(newPaket)
 
-            //this.setState({pakets: temp})
-            axios.post(endpoint, newData)
+        //this.setState({pakets: temp})
+        axios.post(endpoint, newData, authorization)
             .then(response => {
                 window.alert(response.data.message)
-                
+
             })
             .catch(error => console.log(error))
     }
     render() {
         return (
             <div className="card">
-               
+
                 <div className="card-body">
                     Member
                     <select className="form-control mb-2"
-                        vlaue={this.state.id_member}
+                        value={this.state.id_member}
                         onChange={e => this.setState({ id_member: e.target.value })}>
+                        <option value="">--Pilih Member--</option>
                         {this.state.members.map(member => (
                             <option value={member.id_member}>
                                 {member.nama}
@@ -165,41 +179,41 @@ export default class FormTransaksi extends React.Component {
 
                     <button className="btn btn-success"
                         onClick={() => this.addPaket()}>
-                        Tambah Paket
+                        Pilih Paket
                     </button>
                     <button className="btn btn-success"
                         onClick={() => this.simpanTransaksi()}>
                         Simpan
                     </button>
-                    
+
                     {/* tampilkan isi detail */}
                     <h5>Detail Transaksi</h5>
-                                {this.state.detail_transaksi.map(detail => ( 
-                                    <div className="row">
-                                        {/* area nama paket */}
-                                        <div className="col-lg-3">
-                                            {detail.jenis_paket}
-                                        </div>
-                                        {/* area qty */}
-                                        <div className="col-lg-1">
-                                            Qty: {detail.qty}
-                                        </div>
-                                        {/* area harga paket */}
-                                        <div className="col-lg-3">
-                                            @ Rp {detail.harga}
-                                        </div>
-                                        {/* area harga total */}
-                                        <div className="col-lg-3">
-                                            Rp {detail.harga * detail.qty}
-                                        </div>
-                                        <div className="col-lg-2">
-                                        <button type="submit" className="btn btn-outline-dark btn-sm" 
-                                        onClick={() => this.hapusData(detail.id_paket)}>
-                                            Hapus
-                                        </button>
-                                        </div>
-                                    </div>
-                                ))}
+                    {this.state.detail_transaksi.map(detail => (
+                        <div className="row">
+                            {/* area nama paket */}
+                            <div className="col-lg-3">
+                                {detail.jenis_paket}
+                            </div>
+                            {/* area qty */}
+                            <div className="col-lg-1">
+                                Qty: {detail.qty}
+                            </div>
+                            {/* area harga paket */}
+                            <div className="col-lg-3">
+                                @ Rp {detail.harga}
+                            </div>
+                            {/* area harga total */}
+                            <div className="col-lg-3">
+                                Rp {detail.harga * detail.qty}
+                            </div>
+                            <div className="col-lg-2">
+                                <button type="submit" className="btn btn-outline-dark btn-sm"
+                                    onClick={() => this.hapusData(detail.id_paket)}>
+                                    Hapus
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                     {/* modal utk pilihan paket */}
                     <div className="modal" id="modal_paket">
                         <div className="modal-dialog modal-md">
@@ -210,7 +224,7 @@ export default class FormTransaksi extends React.Component {
                                     </h4>
                                 </div>
                                 <div className="modal-body">
-                                    <form onSubmit={(e) =>  this.tambahPaket(e)}>
+                                    <form onSubmit={(e) => this.tambahPaket(e)}>
                                         Pilih Paket
                                         <select className="form-control mb-2"
                                             value={this.state.id_paket}

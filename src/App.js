@@ -8,6 +8,7 @@ import Header from "./header";
 import Footer from "./footer";
 import Transaksi from "./pages/Transaksi";
 import FormTransaksi from './pages/FormTransaksi';
+import Dashboard from "./pages/Dashboard"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Navbar from "./Navbar";
 
@@ -15,7 +16,7 @@ export default function App(){
   return(
     <BrowserRouter>
       <Routes>
-        <Route exact path="/" element={App}/>
+        <Route path="/" element={<Navbar><Dashboard /></Navbar>}/>
         <Route path="login" element={<Login />}/>
         <Route path="member" element={<Navbar><Member /></Navbar>}/>
         <Route path="paket" element={<Navbar><Paket /></Navbar>}/>
